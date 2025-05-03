@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      - MYSQL_DATABASE=product
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - '3306:3306'
+    volumes:
+      - db:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command:
+      - --general-log=1
+      - --general-log-file=/var/lib/mysql/general.log
+volumes:
+  db:
+    driver: local
