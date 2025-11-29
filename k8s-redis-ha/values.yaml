@@ -1,0 +1,57 @@
+# values.yaml
+
+# 1. High Availability Settings
+# 6 nodes total = 3 Masters + 3 Replicas (1 replica per master)
+cluster:
+  nodes: 6
+  replicas: 1
+
+# 2. Persistence (HostPath linkage)
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 10Gi
+
+# 3. Permissions (CRITICAL for HostPath)
+# Bitnami images run as non-root (1001). This init container
+# fixes permission errors on the host directories.
+volumePermissions:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/os-shell
+    # Use the rolling tag '12-debian-12' instead of a specific revision like 'r51'
+    tag: 12-debian-12
+    pullPolicy: Always
+
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis-cluster
+  tag: 7.4.0-debian-12-r3
+  pullPolicy: Always
+
+# 4. Security
+password: "redis"
+
+# 5. Metrics (Optional - helpful for monitoring HA status)
+metrics:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis-exporter
+    tag: 1.76.0-debian-12-r0
+    digest: ""
+    pullPolicy: IfNotPresent
+
+podSecurityContext:
+  fsGroup: 1001
+
+containerSecurityContext:
+  runAsUser: 1001
+
+global:
+  security:
+    allowInsecureImages: true
+
+useHostnames: true
