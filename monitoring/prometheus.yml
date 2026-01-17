@@ -6,4 +6,4 @@ scrape_configs:
     metrics_path: "/metrics"
     static_configs:
       # domain to access host
-      - targets: ["host.docker.internal:2223"]
+      - targets: ["host.docker.internal:2223", "otel-collector:8888"]
