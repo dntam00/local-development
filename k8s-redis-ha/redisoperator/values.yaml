@@ -1,0 +1,297 @@
+# Default values for redis-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Name of the image repository to pull the container image from.
+image:
+  repository: quay.io/spotahome/redis-operator
+  pullPolicy: IfNotPresent
+  tag: v1.3.0-rc1
+  cli_args: ""
+
+imageCredentials:
+  create: false
+  registry: url.private.registry
+  username: someone
+  password: somepassword
+  email: someone@example.com
+  # Use exists secrets in namespace
+  existsSecrets:
+    - registrysecret
+
+updateStrategy:
+  type: RollingUpdate
+
+replicas: 1
+
+# A name in place of the chart name for `app:` labels.
+nameOverride: ""
+
+# A name to substitute for the full names of resources.
+fullnameOverride: ""
+
+# The name of the Namespace to deploy
+# If not set, `.Release.Namespace` is used
+namespace: null
+
+serviceAccount:
+  # Enable service account creation.
+  create: true
+  # Annotations to be added to the service account.
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template.
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 9710
+
+container:
+  port: 9710
+
+# Container [security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container).
+# See the [API reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context-1) for details.
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Container resource [requests and limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+# See the [API reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#resources) for details.
+# @default -- No requests or limits.
+resources: {}
+#   requests:
+#     cpu: 100m
+#     memory: 128Mi
+#   limits:
+#     cpu: 100m
+#     memory: 128Mi
+
+### Monitoring
+###############
+monitoring:
+  # Enable Prometheus PodMonitor to monitor the operator.
+  enabled: false
+  serviceMonitor: false
+  serviceAnnotations: {}
+  prometheus:
+    name: unknown
+
+# Annotations to be added to pods and deployments.
+annotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# CRDs configuration
+crds:
+  # -- Additional CRDs annotations
+  annotations: {}
+    # argocd.argoproj.io/sync-options: "Replace=true"
+    # strategy.spinnaker.io/replace: "true"
+
+priorityClassName: ""
+
+# RedisFailover Custom Resource configuration
+# This deploys a Redis HA cluster managed by the redis-operator
+redisFailover:
+  # Enable/disable RedisFailover CR deployment
+  enabled: false
+
+  # Annotations to add to the RedisFailover resource
+  annotations: {}
+
+  # Authentication configuration
+  auth:
+    # Enable Redis authentication
+    enabled: true
+    # Redis password (will be stored in a Secret)
+    # If existingSecret is set, this is ignored
+    password: "changeme"
+    # Use an existing secret for Redis password
+    # The secret should have a key named "password"
+    existingSecret: ""
+
+  # Redis configuration
+  redis:
+    # Number of Redis replicas
+    replicas: 3
+
+    # Redis image configuration
+    image:
+      repository: redis
+      tag: "7.2-alpine"
+      pullPolicy: IfNotPresent
+
+    # Image pull secrets
+    imagePullSecrets: []
+    #  - name: my-registry-secret
+
+    # Resource requests and limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Custom Redis configuration (inline)
+    # These settings are passed directly to Redis via customConfig
+    # Example:
+    # customConfig:
+    #   - "maxmemory 256mb"
+    #   - "maxmemory-policy allkeys-lru"
+    customConfig: []
+
+    # ConfigMap configuration for redis.conf file
+    configMap:
+      # Enable ConfigMap for redis.conf
+      enabled: true
+      # Mount path for the config file
+      mountPath: "/usr/local/etc/redis"
+      # Custom redis.conf content (if empty, default config is used)
+      # customConfig: |
+      #   maxmemory 256mb
+      #   appendonly yes
+      customConfig: ""
+      # Default configuration values (used if customConfig is empty)
+      maxmemory: "256mb"
+      maxmemoryPolicy: "allkeys-lru"
+      appendonly: "yes"
+      appendfsync: "everysec"
+      minReplicasToWrite: 1
+      minReplicasMaxLag: 10
+      tcpKeepalive: 300
+      timeout: 0
+      slowlogLogSlowerThan: 10000
+      slowlogMaxLen: 128
+
+    # Extra volumes to add to Redis pods
+    extraVolumes: []
+    #  - name: extra-config
+    #    configMap:
+    #      name: my-extra-config
+
+    # Extra volume mounts to add to Redis containers
+    extraVolumeMounts: []
+    #  - name: extra-config
+    #    mountPath: /etc/extra
+    #    readOnly: true
+
+    # Persistence storage configuration
+    storage:
+      persistentVolumeClaim:
+        metadata:
+          name: redis-data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+          # storageClassName: standard
+
+    # Redis exporter for Prometheus metrics
+    exporter:
+      enabled: false
+      image: quay.io/oliver006/redis_exporter:v1.55.0
+      args:
+        - --web.listen-address=:9121
+        - --web.telemetry-path=/metrics
+
+    # Pod affinity rules
+    affinity: {}
+    #  podAntiAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      - topologyKey: kubernetes.io/hostname
+    #        labelSelector:
+    #          matchLabels:
+    #            app.kubernetes.io/name: redis
+
+    # Security context for Redis pods
+    securityContext: {}
+    #  runAsUser: 1000
+    #  runAsNonRoot: true
+    #  fsGroup: 1000
+
+    # Node tolerations
+    tolerations: []
+
+    # Node selector
+    nodeSelector: {}
+
+    # Priority class name
+    priorityClassName: ""
+
+    # Service account name
+    serviceAccountName: ""
+
+    # Custom command
+    command: []
+
+    # Shutdown ConfigMap name
+    shutdownConfigMap: ""
+
+  # Sentinel configuration
+  sentinel:
+    # Number of Sentinel replicas
+    replicas: 3
+
+    # Sentinel image configuration
+    image:
+      repository: redis
+      tag: "7.2-alpine"
+      pullPolicy: IfNotPresent
+
+    # Image pull secrets
+    imagePullSecrets: []
+
+    # Resource requests and limits
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+    # Custom Sentinel configuration (inline)
+    customConfig: []
+    #  - "down-after-milliseconds 5000"
+    #  - "failover-timeout 10000"
+
+    # Custom command
+    command: []
+
+    # Pod affinity rules
+    affinity: {}
+
+    # Security context for Sentinel pods
+    securityContext: {}
+
+    # Node tolerations
+    tolerations: []
+
+    # Node selector
+    nodeSelector: {}
+
+    # Priority class name
+    priorityClassName: ""
+
+    # Sentinel exporter
+    exporter:
+      enabled: false
+
+  # Labels to propagate from the RedisFailover to managed resources
+  labelWhitelist: []
+
+  # Bootstrap node configuration (for joining an existing cluster)
+  bootstrapNode: {}
+  #  host: "existing-redis-master"
+  #  port: "6379"
+  #  allowSentinels: false

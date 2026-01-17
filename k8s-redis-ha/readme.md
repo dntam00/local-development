@@ -7,24 +7,12 @@ k3d cluster create --registry-use k3d-kaixin-registry:12345 -p "8083:32005@loadb
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
 
 
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' k3d-another-kaixin-demo-server-0
+helm -n redis-ha install redis-operator .\redisoperator\ -f .\redisoperator\values.yaml
+kubectl -n redis-ha logs <pod_id>
 
-docker run -d -p 6379:6379 --name port-mapper-6379 alpine/socat tcp-listen:6379,fork,reuseaddr tcp:172.19.0.4:30079
+kubectl config set-context --current --namespace=redis-ha
+
+kubectl get events --sort-by=.lastTimestamp
+kubectl apply -f .\redisfailover.yaml
+kubectl delete -f .\redisfailover.yaml
 ```
-
-
-# 1. Apply the storage configuration
-kubectl apply -f storage.yaml
-
-# 2. Add the Bitnami Helm repository
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-
-# 3. Install the Redis Cluster
-helm install redis-cluster bitnami/redis-cluster -f values.yaml
- helm upgrade --install redis-cluster bitnami/redis-cluster -f values.yaml
-
-# 4. (Optional) Watch the pods spin up
-kubectl get pods -w
-
-

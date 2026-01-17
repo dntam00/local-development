@@ -1,0 +1,65 @@
+apiVersion: databases.spotahome.com/v1
+kind: RedisFailover
+metadata:
+  name: redis
+  namespace: redis-ha
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: database
+spec:
+  # auth:
+  #   secretPath: redis-auth
+
+  redis:
+    replicas: 3
+    image: redis:7.2-alpine
+    imagePullPolicy: IfNotPresent
+
+    command:
+      - "redis-server"
+      - "/redis-custom/redis.conf"
+      - "--protected-mode"
+      - "no"
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    extraVolumes:
+      - name: redis-custom-config
+        configMap:
+          name: redis-config
+
+    extraVolumeMounts:
+      - name: redis-custom-config
+        mountPath: /redis-custom
+        readOnly: true
+
+    storage:
+      persistentVolumeClaim:
+        metadata:
+          name: redisfailover-persistent-data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 4Gi
+          storageClassName: local-path
+
+  sentinel:
+    replicas: 3
+    image: redis:7.2-alpine
+    imagePullPolicy: IfNotPresent
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: redis-ha
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: database
+data:
+  redis.conf: |
+    slaveof 127.0.0.1 6379
+    port 6379
+    # Memory management
+    maxmemory 512mb
+    maxmemory-policy allkeys-lru
+
+    # Persistence (AOF)
+    appendonly no
+    appendfsync everysec
+
+    # Replication
+    min-replicas-to-write 1
+    min-replicas-max-lag 10
+
+    # Network
+    tcp-keepalive 300
+    timeout 0
+
+    user pinger -@all +ping on >pingpass
