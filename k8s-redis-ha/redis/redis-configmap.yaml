@@ -11,7 +11,7 @@ data:
     slaveof 127.0.0.1 6379
     port 6379
     # Memory management
-    maxmemory 512mb
+    maxmemory 4096mb
     maxmemory-policy allkeys-lru
 
     # Persistence (AOF)
